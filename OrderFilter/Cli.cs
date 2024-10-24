@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Text.Json;
-using OrderFilter.Converters;
 using OrderFilter.Models;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -10,20 +9,17 @@ namespace OrderFilter;
 internal sealed class MainCommand : Command<MainCommand.Settings>
 {
     private readonly JsonSerializerOptions serializerOptions = new(JsonSerializerDefaults.Web);
-    private readonly IOrderRepository repository = new OrderRepository();
     private Logger? logger;
-
-    public MainCommand()
-    {
-        serializerOptions.Converters.Add(new CustomDateTimeOffsetConverter());
-    }
 
     public override int Execute(CommandContext context, Settings settings)
     {
-        logger = new Logger(settings.DeliveryLogFilePath!);
-        var orders = repository.GetOrders();
-        var results = FilterOrders(orders, settings.CityDistrict!, settings.FirstDeliveryDateTime);
-        SaveResults(results, settings.DeliveryOrderFilePath!);
+        using (logger = new Logger(settings.DeliveryLogFilePath!))
+        {
+            IOrderRepository repository = new OrderRepository(logger);
+            var orders = repository.GetOrders();
+            var results = FilterOrders(orders, settings.CityDistrict!, settings.FirstDeliveryDateTime);
+            SaveResults(results, settings.DeliveryOrderFilePath!);
+        }
         return 0;
     }
 
@@ -75,13 +71,13 @@ internal sealed class MainCommand : Command<MainCommand.Settings>
             {
                 return ValidationResult.Error($"The '--city-district' filter option is not provided.");
             }
-            if (!Directory.Exists(Path.GetDirectoryName(DeliveryLogFilePath)))
+            if (!Directory.Exists(Path.GetDirectoryName(Path.GetFullPath(DeliveryLogFilePath!))))
             {
-                return ValidationResult.Error($"A directory to the log '{DeliveryLogFilePath}' file does not exist!");
+                return ValidationResult.Error($"A root directory for the log '{DeliveryLogFilePath}' file does not exist!");
             }
-            if (!Directory.Exists(Path.GetDirectoryName(DeliveryOrderFilePath)))
+            if (!Directory.Exists(Path.GetDirectoryName(Path.GetFullPath(DeliveryOrderFilePath!))))
             {
-                return ValidationResult.Error($"A directory to the delivery order '{DeliveryOrderFilePath}' file does not exist!");
+                return ValidationResult.Error($"A root directory for the delivery order '{DeliveryOrderFilePath}' file does not exist!");
             }
 
             return ValidationResult.Success();

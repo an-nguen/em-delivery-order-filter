@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net8.0/em-order-filter.dll",
+            "program": "${workspaceFolder}/OrderFilter/bin/Debug/net8.0/em-order-filter.dll",
             "args": [
                 "--city-district",
                 "Ульяновск, Засвияжский район",
@@ -19,7 +19,7 @@
             "env": {
                 "FOO": "bar"
             },
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/OrderFilter",
             "console": "internalConsole",
             "stopAtEntry": false,
         },
