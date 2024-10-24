@@ -6,27 +6,46 @@ using Spectre.Console.Cli;
 
 namespace OrderFilter;
 
-internal sealed class MainCommand : Command<MainCommand.Settings>
+public sealed class MainCommand : Command<MainCommand.Settings>
 {
     private readonly JsonSerializerOptions serializerOptions = new(JsonSerializerDefaults.Web);
     private Logger? logger;
 
     public override int Execute(CommandContext context, Settings settings)
     {
+
         using (logger = new Logger(settings.DeliveryLogFilePath!))
         {
-            IOrderRepository repository = new OrderRepository(logger);
+            IOrderRepository repository = new OrderRepository(logger, settings.InputFilePath);
             var orders = repository.GetOrders();
             var results = FilterOrders(orders, settings.CityDistrict!, settings.FirstDeliveryDateTime);
+            PrintResults(results);
             SaveResults(results, settings.DeliveryOrderFilePath!);
         }
         return 0;
     }
 
+    private void PrintResults(IEnumerable<Order> orders)
+    {
+        var table = new Table();
+        table.AddColumns([
+            "ID",
+            "Weight",
+            "City District Name",
+            "Delivery Date Time"
+        ]);
+        foreach (var order in orders)
+        {
+            table.AddRow(order.Id.ToString(), order.Weight.ToString(), order.CityDistrictName, order.DeliveryDateTime.ToString());
+        }
+        AnsiConsole.Write(table);
+    }
+
     private IEnumerable<Order> FilterOrders(IEnumerable<Order> orders, string cityDistrictName, DateTimeOffset firstDeliveryDateTime)
     {
         logger?.Log($"Filtering the delivery orders (params: '{cityDistrictName}', '{firstDeliveryDateTime}')...");
-        var filteredOrders = orders.Where(o => o.DeliveryDateTime > firstDeliveryDateTime.AddMinutes(30)
+        var filteredOrders = orders.Where(o => o.DeliveryDateTime < firstDeliveryDateTime.AddMinutes(30)
+                                                  && o.DeliveryDateTime > firstDeliveryDateTime
                                                   && o.CityDistrictName.Contains(cityDistrictName))
                                    .ToList();
         logger?.Log($"A filtering process has been done. The size of the filtered list is {filteredOrders.Count}.");
@@ -51,10 +70,14 @@ internal sealed class MainCommand : Command<MainCommand.Settings>
 
     public sealed class Settings : CommandSettings
     {
+        [CommandOption("-i|--input-file")]
+        [DefaultValue("data.json")]
+        public string InputFilePath { get; init; } = null!;
+
         [CommandOption("-c|--city-district")]
         public string? CityDistrict { get; init; }
 
-        [CommandOption("-d|--first-delivery-time")]
+        [CommandOption("-d|--first-delivery-date-time")]
         public DateTimeOffset FirstDeliveryDateTime { get; init; }
 
         [CommandOption("-l|--delivery-log")]

@@ -5,23 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // Use IntelliSense to find out which attributes exist for C# debugging
+            // Use hover for the description of the existing attributes
+            // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/OrderFilter/bin/Debug/net8.0/em-order-filter.dll",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/OrderFilter/bin/Debug/net8.0/OrderFilter.dll",
             "args": [
                 "--city-district",
                 "Ульяновск, Засвияжский район",
-                "--first-delivery-time",
-                "2024-01-15 13:00:00"
+                "--first-delivery-date-time",
+                "2024-01-16 10:20:00"
             ],
             "env": {
                 "FOO": "bar"
             },
             "cwd": "${workspaceFolder}/OrderFilter",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
-            "stopAtEntry": false,
+            "stopAtEntry": false
         },
         {
             "name": ".NET Core Attach",

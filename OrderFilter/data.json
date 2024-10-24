@@ -1,43 +1,43 @@
 [
     {
         "id": "d3ecca97-aad6-47c9-823a-7b4c0df691e1",
-        "weight": 1250,
+        "weight": 1.250,
         "cityDistrictName": "Ульяновск, Ленинский район",
         "deliveryDateTime": "2024-01-15 09:40:00"
     },
     {
         "id": "b37a72f4-eae0-4079-a0f0-49055b714022",
-        "weight": 500,
+        "weight": 5,
         "cityDistrictName": "Ульяновск, Засвияжский район",
         "deliveryDateTime": "2024-01-15 12:10:00"
     },
     {
         "id": "fe16871c-0c85-45e1-9580-72d1447a65d4",
-        "weight": 150,
+        "weight": 0.15,
         "cityDistrictName": "Ульяновск, Засвияжский район",
         "deliveryDateTime": "2024-01-16 10:40:00"
     },
     {
         "id": "55d13cf4-dfe9-4ee1-a39c-12a875c868f3",
-        "weight": 5400,
+        "weight": 5.4,
         "cityDistrictName": "Ульяновск, Железнодорожный район",
         "deliveryDateTime": "2024-01-17 11:30:00"
     },
     {
         "id": "7f02830f-a15b-41ab-87e8-acadf3053426",
-        "weight": 11000,
+        "weight": 11,
         "cityDistrictName": "Ульяновск, Заволжский район",
         "deliveryDateTime": "2024-01-19 12:30:00"
     },
     {
         "id": "51ea7ec1-dae5-492c-b153-8a0d80fb7130",
-        "weight": 1000,
+        "weight": 1,
         "cityDistrictName": "Ульяновск, Заволжский район",
         "deliveryDateTime": "2024-01-19 13:00:00"
     },
     {
         "id": "63430182-00e4-402b-bcf4-8c16d5bcc56e",
-        "weight": 1500,
+        "weight": 1.5,
         "cityDistrictName": "Ульяновск, Заволжский район",
         "deliveryDateTime": "2024-01-20 18:00:00"
     }
