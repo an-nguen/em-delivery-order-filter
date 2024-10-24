@@ -1,6 +1,6 @@
 namespace OrderFilter.Models;
 
-public class Order
+public sealed class Order
 {
     public Guid Id { get; set; }
 

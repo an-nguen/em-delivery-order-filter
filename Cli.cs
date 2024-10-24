@@ -1,78 +1,89 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using OrderFilter.Converters;
 using OrderFilter.Models;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace OrderFilter;
 
-
-public sealed class DateTimeOffsetConverter : JsonConverter<DateTimeOffset>
-{
-    private readonly string _format = "yyyy-MM-dd HH:mm:ss";
-
-    public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        if (DateTimeOffset.TryParseExact(reader.GetString(), _format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var value))
-        {
-            return value;
-        }
-        return value;
-    }
-
-    public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
-    {
-        writer.WriteStringValue(value.ToString(_format));
-    }
-}
-
 internal sealed class MainCommand : Command<MainCommand.Settings>
 {
     private readonly JsonSerializerOptions serializerOptions = new(JsonSerializerDefaults.Web);
-
-    public IEnumerable<Order> Orders = [];
+    private readonly IOrderRepository repository = new OrderRepository();
+    private Logger? logger;
 
     public MainCommand()
     {
-        serializerOptions.Converters.Add(new DateTimeOffsetConverter());
+        serializerOptions.Converters.Add(new CustomDateTimeOffsetConverter());
     }
 
     public override int Execute(CommandContext context, Settings settings)
     {
-        LoadData(settings.DataFilePath);
+        logger = new Logger(settings.DeliveryLogFilePath!);
+        var orders = repository.GetOrders();
+        var results = FilterOrders(orders, settings.CityDistrict!, settings.FirstDeliveryDateTime);
+        SaveResults(results, settings.DeliveryOrderFilePath!);
         return 0;
     }
 
-    public void LoadData(string dataFilePath)
+    private IEnumerable<Order> FilterOrders(IEnumerable<Order> orders, string cityDistrictName, DateTimeOffset firstDeliveryDateTime)
     {
-        var data = File.ReadAllText(dataFilePath);
-        var orders = JsonSerializer.Deserialize<IEnumerable<Order>>(data, serializerOptions)
-            ?? throw new NullReferenceException("Failed to load an input data");
-        Orders = orders;
+        logger?.Log($"Filtering the delivery orders (params: '{cityDistrictName}', '{firstDeliveryDateTime}')...");
+        var filteredOrders = orders.Where(o => o.DeliveryDateTime > firstDeliveryDateTime.AddMinutes(30)
+                                                  && o.CityDistrictName.Contains(cityDistrictName))
+                                   .ToList();
+        logger?.Log($"A filtering process has been done. The size of the filtered list is {filteredOrders.Count}.");
+        return filteredOrders;
+    }
+
+    private void SaveResults(IEnumerable<Order> filteredOrders, string outputFilePath)
+    {
+        try
+        {
+            using var fs = new FileStream(outputFilePath, FileMode.OpenOrCreate, FileAccess.Write);
+            using var writer = new Utf8JsonWriter(fs);
+            logger?.Log($"Writing result to the {outputFilePath} file...");
+            JsonSerializer.Serialize(writer, filteredOrders, serializerOptions);
+            logger?.Log($"The filtered results have been written successfully.");
+        }
+        catch (Exception e)
+        {
+            logger?.Log($"Failed to write results to the {outputFilePath} file. Exception message: {e.Message}");
+        }
     }
 
     public sealed class Settings : CommandSettings
     {
-        [CommandOption("-i|--input")]
-        [DefaultValue("./data.json")]
-        public string DataFilePath { get; init; } = null!;
-
         [CommandOption("-c|--city-district")]
-        public string CityDistrict { get; init; } = null!;
+        public string? CityDistrict { get; init; }
 
         [CommandOption("-d|--first-delivery-time")]
-        public DateTimeOffset FirstDeliveryTime { get; init; }
+        public DateTimeOffset FirstDeliveryDateTime { get; init; }
 
         [CommandOption("-l|--delivery-log")]
-        public string DeliveryLog { get; init; } = null!;
+        [DefaultValue("log.txt")]
+        public string? DeliveryLogFilePath { get; init; }
 
         [CommandOption("-o|--delivery-order")]
-        public string DeliveryOrder { get; init; } = null!;
+        [DefaultValue("orders.json")]
+        public string? DeliveryOrderFilePath { get; init; }
 
         public override ValidationResult Validate()
         {
+            if (string.IsNullOrEmpty(CityDistrict))
+            {
+                return ValidationResult.Error($"The '--city-district' filter option is not provided.");
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(DeliveryLogFilePath)))
+            {
+                return ValidationResult.Error($"A directory to the log '{DeliveryLogFilePath}' file does not exist!");
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(DeliveryOrderFilePath)))
+            {
+                return ValidationResult.Error($"A directory to the delivery order '{DeliveryOrderFilePath}' file does not exist!");
+            }
+
             return ValidationResult.Success();
         }
     }

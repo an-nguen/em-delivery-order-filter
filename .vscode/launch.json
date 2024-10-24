@@ -11,8 +11,10 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/bin/Debug/net8.0/em-order-filter.dll",
             "args": [
+                "--city-district",
+                "Ульяновск, Засвияжский район",
                 "--first-delivery-time",
-                "2024-09-01 16:00:00"
+                "2024-01-15 13:00:00"
             ],
             "env": {
                 "FOO": "bar"
