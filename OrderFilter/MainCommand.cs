@@ -99,7 +99,7 @@ public sealed class MainCommand : Command<MainCommand.Settings>
         public string? CityDistrict { get; init; }
 
         [CommandOption("-d|--first-delivery-date-time")]
-        [Description("A first delivery date time from current system locale (required)")]
+        [Description("A first delivery date time in a format defined by current system locale (required)")]
         public DateTimeOffset FirstDeliveryDateTime { get; init; }
 
         [CommandOption("-l|--delivery-log")]
