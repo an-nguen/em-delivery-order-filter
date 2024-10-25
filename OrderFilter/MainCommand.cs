@@ -8,12 +8,11 @@ namespace OrderFilter;
 
 public sealed class MainCommand : Command<MainCommand.Settings>
 {
-    private readonly JsonSerializerOptions serializerOptions = new(JsonSerializerDefaults.Web);
+    private readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
     private Logger? logger;
 
     public override int Execute(CommandContext context, Settings settings)
     {
-
         using (logger = new Logger(settings.DeliveryLogFilePath!))
         {
             IOrderRepository repository = new OrderRepository(logger, settings.InputFilePath);
@@ -59,7 +58,7 @@ public sealed class MainCommand : Command<MainCommand.Settings>
             using var fs = new FileStream(outputFilePath, FileMode.OpenOrCreate, FileAccess.Write);
             using var writer = new Utf8JsonWriter(fs);
             logger?.Log($"Writing result to the {outputFilePath} file...");
-            JsonSerializer.Serialize(writer, filteredOrders, serializerOptions);
+            JsonSerializer.Serialize(writer, filteredOrders, SerializerOptions);
             logger?.Log($"The filtered results have been written successfully.");
         }
         catch (Exception e)
@@ -72,27 +71,40 @@ public sealed class MainCommand : Command<MainCommand.Settings>
     {
         [CommandOption("-i|--input-file")]
         [DefaultValue("data.json")]
+        [Description("The input data file in JSON format.")]
         public string InputFilePath { get; init; } = null!;
 
         [CommandOption("-c|--city-district")]
+        [Description("A city district (required)")]
         public string? CityDistrict { get; init; }
 
         [CommandOption("-d|--first-delivery-date-time")]
+        [Description("A first delivery date time from current system locale (required)")]
         public DateTimeOffset FirstDeliveryDateTime { get; init; }
 
         [CommandOption("-l|--delivery-log")]
         [DefaultValue("log.txt")]
+        [Description("A file path to the output log file (default is 'log.txt')")]
         public string? DeliveryLogFilePath { get; init; }
 
         [CommandOption("-o|--delivery-order")]
         [DefaultValue("orders.json")]
+        [Description("A file path to the output order file (default is 'orders.json')")]
         public string? DeliveryOrderFilePath { get; init; }
 
         public override ValidationResult Validate()
         {
+            if (string.IsNullOrEmpty(InputFilePath) || !File.Exists(InputFilePath))
+            {
+                return ValidationResult.Error($"The '--input' option is not provided or invalid.");
+            }
             if (string.IsNullOrEmpty(CityDistrict))
             {
                 return ValidationResult.Error($"The '--city-district' filter option is not provided.");
+            }
+            if (FirstDeliveryDateTime == DateTimeOffset.MinValue)
+            {
+                return ValidationResult.Error($"The '--first-delivery-date-time' filter option is not provided or invalid.");
             }
             if (!Directory.Exists(Path.GetDirectoryName(Path.GetFullPath(DeliveryLogFilePath!))))
             {
