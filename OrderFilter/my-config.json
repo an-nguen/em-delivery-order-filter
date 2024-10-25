@@ -1,0 +1,7 @@
+{
+    "inputFilePath": "data.json",
+    "cityDistrict": "Ульяновск, Засвияжский район",
+    "firstDeliveryDateTime": "2024-01-16T10:30:00",
+    "deliveryLogFilePath": "log.txt",
+    "deliveryOrderFilePath": "orders.json"
+}

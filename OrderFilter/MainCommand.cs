@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using OrderFilter.Models;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -13,15 +14,29 @@ public sealed class MainCommand : Command<MainCommand.Settings>
 
     public override int Execute(CommandContext context, Settings settings)
     {
-        using (logger = new Logger(settings.DeliveryLogFilePath!))
+        var currentSettings = settings.HasConfigFile ? LoadConfig(settings.ConfigFilePath!) : settings;
+        using (logger = new Logger(currentSettings.DeliveryLogFilePath!))
         {
-            IOrderRepository repository = new OrderRepository(logger, settings.InputFilePath);
+            IOrderRepository repository = new OrderRepository(logger, currentSettings.InputFilePath);
             var orders = repository.GetOrders();
-            var results = FilterOrders(orders, settings.CityDistrict!, settings.FirstDeliveryDateTime);
+            var results = FilterOrders(orders, currentSettings.CityDistrict!, currentSettings.FirstDeliveryDateTime);
             PrintResults(results);
-            SaveResults(results, settings.DeliveryOrderFilePath!);
+            SaveResults(results, currentSettings.DeliveryOrderFilePath!);
         }
         return 0;
+    }
+
+    private Settings LoadConfig(string configFilePath)
+    {
+        var jsonStr = File.ReadAllText(configFilePath);
+        var settings = JsonSerializer.Deserialize<Settings>(jsonStr, SerializerOptions)
+            ?? throw new ArgumentException("Failed to parse a config file");
+        var validationResult = settings.Validate();
+        if (!validationResult.Successful)
+        {
+            throw new ArgumentException(validationResult.Message);
+        }
+        return settings;
     }
 
     private void PrintResults(IEnumerable<Order> orders)
@@ -69,6 +84,11 @@ public sealed class MainCommand : Command<MainCommand.Settings>
 
     public sealed class Settings : CommandSettings
     {
+        [CommandOption("--config")]
+        [Description("A config file that match to command line options")]
+        [JsonIgnore]
+        public string? ConfigFilePath { get; init; }
+
         [CommandOption("-i|--input-file")]
         [DefaultValue("data.json")]
         [Description("The input data file in JSON format.")]
@@ -92,8 +112,17 @@ public sealed class MainCommand : Command<MainCommand.Settings>
         [Description("A file path to the output order file (default is 'orders.json')")]
         public string? DeliveryOrderFilePath { get; init; }
 
+        [JsonIgnore]
+        public bool HasConfigFile = false;
+
         public override ValidationResult Validate()
         {
+            if (!string.IsNullOrEmpty(ConfigFilePath) && File.Exists(ConfigFilePath))
+            {
+                HasConfigFile = true;
+                return ValidationResult.Success();
+            }
+
             if (string.IsNullOrEmpty(InputFilePath) || !File.Exists(InputFilePath))
             {
                 return ValidationResult.Error($"The '--input' option is not provided or invalid.");
